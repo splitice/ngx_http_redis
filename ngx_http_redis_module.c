@@ -2,10 +2,8 @@
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Sergey A. Osokin
+ * Modified by Mathew B. Heard
  */
-
-#define NGX_ESCAPE_REDIS   4
-
 
 #include <ngx_config.h>
 #include <ngx_core.h>
@@ -275,11 +273,10 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
     ngx_http_redis_loc_conf_t      *rlcf;
 
 	//*2\r\n$3\r\nGET\r\n$
-	//const char request_start[] = {'*','2','\r','\n','$','3','\r','\n','G','E','T','\r','\n','$'};
 	const char *request_start = "*2\r\n$3\r\nGET\r\n$";
-	char url_len_buf[8];
-	const char* url_len_ptr = &url_len_buf[0];
-	int url_len;
+	char key_len_buf[8];
+	const char* key_len_ptr = &key_len_buf[0];
+	int key_len;
 
     rlcf = ngx_http_get_module_loc_conf(r, ngx_http_redis_module);
 
@@ -311,9 +308,11 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-	url_len = sprintf(url_len_buf,"%d",vv[1]->len);
+	key_len = sprintf(key_len_buf,"%d",vv[1]->len);
 
-    len += 14 + url_len + sizeof(CRLF) - 1 + vv[1]->len + sizeof(CRLF) - 1;
+	//Work out how long the request is going to be
+	//14 = length of request_start
+    len += 14 + key_len + sizeof(CRLF) - 1 + vv[1]->len + sizeof(CRLF) - 1;
 
 	ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "redis request length: %d", len);
@@ -368,10 +367,10 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
 	}
 
 	/* Add length */
-	while(url_len != 0){
-		*b->last++ = *url_len_ptr;
-		url_len--;
-		url_len_ptr ++;
+	while(key_len != 0){
+		*b->last++ = *key_len_ptr;
+		key_len--;
+		key_len_ptr ++;
 	}
 	
     /* Add one more "\r\n". */
@@ -382,11 +381,7 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
 
     ctx->key.data = b->last;
 
-    /*
-     * If no escape symbols then copy data as is, othervise use
-     * escape-copy function.
-     */
-
+    /* Copy the key into the request buffer */
 	b->last = ngx_copy(b->last, vv[1]->data, vv[1]->len);
 
     ctx->key.len = b->last - ctx->key.data;
