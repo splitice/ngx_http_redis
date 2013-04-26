@@ -11,6 +11,7 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 #include <nginx.h>
+#include <stdio.h>
 
 
 typedef struct {
@@ -263,17 +264,22 @@ ngx_http_redis_handler(ngx_http_request_t *r)
     return NGX_DONE;
 }
 
-
 static ngx_int_t
 ngx_http_redis_create_request(ngx_http_request_t *r)
 {
-    size_t                          len;
-    uintptr_t                       escape;
+    size_t                          len, i;
     ngx_buf_t                      *b;
     ngx_chain_t                    *cl;
     ngx_http_redis_ctx_t           *ctx;
     ngx_http_variable_value_t      *vv[2];
     ngx_http_redis_loc_conf_t      *rlcf;
+
+	//*2\r\n$3\r\nGET\r\n$
+	//const char request_start[] = {'*','2','\r','\n','$','3','\r','\n','G','E','T','\r','\n','$'};
+	const char *request_start = "*2\r\n$3\r\nGET\r\n$";
+	char url_len_buf[8];
+	const char* url_len_ptr = &url_len_buf[0];
+	int url_len;
 
     rlcf = ngx_http_get_module_loc_conf(r, ngx_http_redis_module);
 
@@ -305,10 +311,12 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    /* Count have space required escape symbols. */
-    escape = 2 * ngx_escape_uri(NULL, vv[1]->data, vv[1]->len, NGX_ESCAPE_REDIS);
+	url_len = sprintf(url_len_buf,"%d",vv[1]->len);
 
-    len += sizeof("get ") - 1 + vv[1]->len + escape + sizeof(CRLF) - 1;
+    len += 14 + url_len + sizeof(CRLF) - 1 + vv[1]->len + sizeof(CRLF) - 1;
+
+	ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                       "redis request length: %d", len);
 
     /* Create temporary buffer for request with size len. */
     b = ngx_create_temp_buf(r->pool, len);
@@ -355,7 +363,19 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
 
 
     /* Add "get" command with space. */
-    *b->last++ = 'g'; *b->last++ = 'e'; *b->last++ = 't'; *b->last++ = ' ';
+	for(i=0;i<14;i++){
+		*b->last++ = request_start[i];
+	}
+
+	/* Add length */
+	while(url_len != 0){
+		*b->last++ = *url_len_ptr;
+		url_len--;
+		url_len_ptr ++;
+	}
+	
+    /* Add one more "\r\n". */
+    *b->last++ = CR; *b->last++ = LF;
 
     /* Get context redis_key from nginx.conf. */
     ctx = ngx_http_get_module_ctx(r, ngx_http_redis_module);
@@ -367,13 +387,7 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
      * escape-copy function.
      */
 
-    if (escape == 0) {
-        b->last = ngx_copy(b->last, vv[1]->data, vv[1]->len);
-
-    } else {
-        b->last = (u_char *) ngx_escape_uri(b->last, vv[1]->data, vv[1]->len,
-                                            NGX_ESCAPE_REDIS);
-    }
+	b->last = ngx_copy(b->last, vv[1]->data, vv[1]->len);
 
     ctx->key.len = b->last - ctx->key.data;
 
