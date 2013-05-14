@@ -272,9 +272,14 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
     ngx_http_variable_value_t      *vv[2];
     ngx_http_redis_loc_conf_t      *rlcf;
 
-	//*2\r\n$3\r\nGET\r\n$
-	const char *request_start = "*2\r\n$3\r\nGET\r\n$";
+	//The start of the unified protocol GET request
+	const char *get_request_start = "*2\r\n$3\r\nGET\r\n$";
+
+	//Buffer to store the char version of the key - max size
 	char key_len_buf[8];
+
+	//Bad code
+	//TODO: use ngx_get_num_size( to remove the need for this
 	const char* key_len_ptr = &key_len_buf[0];
 	int key_len;
 
@@ -363,7 +368,7 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
 
     /* Add "get" command with space. */
 	for(i=0;i<14;i++){
-		*b->last++ = request_start[i];
+		*b->last++ = get_request_start[i];
 	}
 
 	/* Add length */
