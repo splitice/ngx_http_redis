@@ -1,6 +1,8 @@
 nginx HTTP redis module
 --
 
+This branch is maintained by Mathew "SplitIce" Heard (<http://www.x4b.org>) and is not the primary branch.The only intended modification in this branch is the upgrade of the protocol used in the Redis GET request to use he newer Unified Request Protocol allowing for spaces in the key name. This brings full compatibility with agentzh's SRCache (<https://github.com/agentzh/srcache-nginx-module/>) module.
+
 Description:
 --
 
@@ -124,7 +126,7 @@ Thanks to:
 Maxim Dounin
 Vsevolod Stakhov
 Ezra Zygmuntowicz
-
+Yichun Zhang
 
 
 Special thanks to:
@@ -132,3 +134,6 @@ Special thanks to:
 Evan Miller for his "Guide To Nginx Module Development" and "Advanced Topics
 In Nginx Module Development"
 Valery Kholodkov for his "Nginx modules development"
+
+
+
