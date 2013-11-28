@@ -648,7 +648,7 @@ ngx_http_redis_filter(void *data, ssize_t bytes)
 #if defined nginx_version && nginx_version < 1001004
     if (u->length == ctx->rest) {
 #else
-    if (u->length == (ssize_t) ctx->rest) {
+	if (u->headers_in.content_length_n == (ssize_t) ctx->rest) {
 #endif
 
         if (ngx_strncmp(b->last,
@@ -659,17 +659,17 @@ ngx_http_redis_filter(void *data, ssize_t bytes)
             ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
                           "redis sent invalid trailer");
 
-            u->length = 0;
+            u->headers_in.content_length_n = 0;
             ctx->rest = 0;
 
             return NGX_OK;
         }
 
-        u->length -= bytes;
+        u->headers_in.content_length_n -= bytes;
         ctx->rest -= bytes;
 
 #if defined nginx_version && nginx_version >= 1001004
-        if (u->length == 0) {
+        if (u->headers_in.content_length_n == 0) {
             u->keepalive = 1;
         }
 #endif
@@ -699,14 +699,14 @@ ngx_http_redis_filter(void *data, ssize_t bytes)
 
     ngx_log_debug4(NGX_LOG_DEBUG_HTTP, ctx->request->connection->log, 0,
                    "redis filter bytes:%z size:%z length:%z rest:%z",
-                   bytes, b->last - b->pos, u->length, ctx->rest);
+                   bytes, b->last - b->pos, u->headers_in.content_length_n, ctx->rest);
 
-    if (bytes <= (ssize_t) (u->length - NGX_HTTP_REDIS_END)) {
-        u->length -= bytes;
+    if (bytes <= (ssize_t) (u->headers_in.content_length_n - 2)) {
+        u->headers_in.content_length_n -= bytes;
         return NGX_OK;
     }
 
-    last += u->length - NGX_HTTP_REDIS_END;
+    last += u->headers_in.content_length_n;
 
     if (ngx_strncmp(last, ngx_http_redis_end, b->last - last) != 0) {
         ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
@@ -715,7 +715,7 @@ ngx_http_redis_filter(void *data, ssize_t bytes)
 #if defined nginx_version && nginx_version >= 1001004
         b->last = last;
         cl->buf->last = last;
-        u->length = 0;
+        u->headers_in.content_length_n = 0;
         ctx->rest = 0;
 
         return NGX_OK;
@@ -725,10 +725,10 @@ ngx_http_redis_filter(void *data, ssize_t bytes)
     ctx->rest -= b->last - last;
     b->last = last;
     cl->buf->last = last;
-    u->length = ctx->rest;
+    u->headers_in.content_length_n = ctx->rest;
 
 #if defined nginx_version && nginx_version >= 1001004
-        if (u->length == 0) {
+        if (u->headers_in.content_length_n == 0) {
             u->keepalive = 1;
         }
 #endif
