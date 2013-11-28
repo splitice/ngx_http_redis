@@ -272,16 +272,16 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
     ngx_http_variable_value_t      *vv[2];
     ngx_http_redis_loc_conf_t      *rlcf;
 
-	//The start of the unified protocol GET request
-	const char *get_request_start = "*2\r\n$3\r\nGET\r\n$";
+    //The start of the unified protocol GET request
+    const char *get_request_start = "*2\r\n$3\r\nGET\r\n$";
 
-	//Buffer to store the char version of the key - max size
-	char key_len_buf[8];
+    //Buffer to store the char version of the key - max size
+    char key_len_buf[8];
 
-	//Bad code
-	//TODO: use ngx_get_num_size( to remove the need for this
-	const char* key_len_ptr = &key_len_buf[0];
-	int key_len;
+    //Bad code
+    //TODO: use ngx_get_num_size( to remove the need for this
+    const char* key_len_ptr = &key_len_buf[0];
+    int key_len;
 
     rlcf = ngx_http_get_module_loc_conf(r, ngx_http_redis_module);
 
@@ -313,13 +313,13 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-	key_len = sprintf(key_len_buf,"%d",vv[1]->len);
+    key_len = sprintf(key_len_buf,"%d",vv[1]->len);
 
-	//Work out how long the request is going to be
-	//14 = length of request_start
+    //Work out how long the request is going to be
+    //14 = length of request_start
     len += 14 + key_len + sizeof(CRLF) - 1 + vv[1]->len + sizeof(CRLF) - 1;
 
-	ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "redis request length: %d", len);
 
     /* Create temporary buffer for request with size len. */
@@ -367,17 +367,17 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
 
 
     /* Add "get" command with space. */
-	for(i=0;i<14;i++){
-		*b->last++ = get_request_start[i];
-	}
+    for(i=0;i<14;i++){
+        *b->last++ = get_request_start[i];
+    }
 
-	/* Add length */
-	while(key_len != 0){
-		*b->last++ = *key_len_ptr;
-		key_len--;
-		key_len_ptr ++;
-	}
-	
+    /* Add length */
+    while(key_len != 0){
+        *b->last++ = *key_len_ptr;
+        key_len--;
+        key_len_ptr ++;
+    }
+    
     /* Add one more "\r\n". */
     *b->last++ = CR; *b->last++ = LF;
 
@@ -387,7 +387,7 @@ ngx_http_redis_create_request(ngx_http_request_t *r)
     ctx->key.data = b->last;
 
     /* Copy the key into the request buffer */
-	b->last = ngx_copy(b->last, vv[1]->data, vv[1]->len);
+    b->last = ngx_copy(b->last, vv[1]->data, vv[1]->len);
 
     ctx->key.len = b->last - ctx->key.data;
 
@@ -648,7 +648,7 @@ ngx_http_redis_filter(void *data, ssize_t bytes)
 #if defined nginx_version && nginx_version < 1001004
     if (u->length == ctx->rest) {
 #else
-	if (u->headers_in.content_length_n == (ssize_t) ctx->rest) {
+    if (u->headers_in.content_length_n == (ssize_t) ctx->rest) {
 #endif
 
         if (ngx_strncmp(b->last,
