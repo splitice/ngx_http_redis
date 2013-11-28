@@ -645,38 +645,6 @@ ngx_http_redis_filter(void *data, ssize_t bytes)
     u = ctx->request->upstream;
     b = &u->buffer;
 
-#if defined nginx_version && nginx_version < 1001004
-    if (u->length == ctx->rest) {
-#else
-    if (u->headers_in.content_length_n == (ssize_t) ctx->rest) {
-#endif
-
-        if (ngx_strncmp(b->last,
-                   ngx_http_redis_end + NGX_HTTP_REDIS_END - ctx->rest,
-                   bytes)
-            != 0)
-        {
-            ngx_log_error(NGX_LOG_ERR, ctx->request->connection->log, 0,
-                          "redis sent invalid trailer");
-
-            u->headers_in.content_length_n = 0;
-            ctx->rest = 0;
-
-            return NGX_OK;
-        }
-
-        u->headers_in.content_length_n -= bytes;
-        ctx->rest -= bytes;
-
-#if defined nginx_version && nginx_version >= 1001004
-        if (u->headers_in.content_length_n == 0) {
-            u->keepalive = 1;
-        }
-#endif
-
-        return NGX_OK;
-    }
-
     for (cl = u->out_bufs, ll = &u->out_bufs; cl; cl = cl->next) {
         ll = &cl->next;
     }
