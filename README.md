@@ -33,7 +33,7 @@ Usage:
 
 Example 1.
 
-
+```
 http
 {
  ...
@@ -49,7 +49,7 @@ http
                 }
         }
 }
-
+```
 
 Example 2.
 
@@ -58,6 +58,7 @@ for lookup appropriate backend.
 
 Eval module (http://www.grid.net.ru/nginx/eval.en.html) required.
 
+```
 http
 {
  ...
@@ -81,14 +82,14 @@ http
         ...
      }
 }
-
+```
 
 Example 3.
 
 Compile nginx with ngx_http_redis and ngx_http_gunzip_filter modules
 (http://mdounin.ru/hg/ngx_http_gunzip_filter_module/).
 Gzip content and put it into redis database.
-
+```
 % cat index.html
 <html><body>Hello from redis!</body></html>
 % gzip index.html
@@ -97,10 +98,12 @@ OK
 % cat index.html.gz | redis-cli -x set /
 OK
 %
+```
 
 Using following configuration nginx get data from redis database and
 gunzip it.
 
+```
 http
 {
  ...
@@ -117,7 +120,7 @@ http
                 redis_pass redis;
     }
 }
-
+```
 
 
 Thanks to:
